@@ -1,11 +1,8 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 
 	"github.com/fatih/color"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,13 +11,7 @@ import (
 )
 
 func main() {
-	var ns string
-	flag.StringVar(&ns, "namespace", "", "namespace")
-
-	// Bootstrap k8s configuration from local 	Kubernetes config file
-	kubeconfig := filepath.Join(os.Getenv("HOME"), ".kube", "config")
-	log.Println("Using kubeconfig file: ", kubeconfig)
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	config, err := clientcmd.BuildConfigFromFlags("", "")
 	if err != nil {
 		log.Fatal(err)
 	}
