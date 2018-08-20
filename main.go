@@ -1,8 +1,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/fatih/color"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,7 +14,19 @@ import (
 )
 
 func main() {
-	config, err := clientcmd.BuildConfigFromFlags("", "")
+	kubePtr := flag.Bool("use-kubeconfig", false, "use kubeconfig on local system")
+	flag.Parse()
+
+	var kubeconfig string
+
+	if *kubePtr == true {
+		kubeconfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
+	} else {
+		kubeconfig = ""
+	}
+
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+
 	if err != nil {
 		log.Fatal(err)
 	}
