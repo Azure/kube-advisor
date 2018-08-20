@@ -14,6 +14,14 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+type ContainerStatus struct {
+	Name           string
+	ResourceCPU    bool
+	ResourceMemory bool
+	RequestCPU     bool
+	RequestMemory  bool
+}
+
 func main() {
 	kubePtr := flag.Bool("use-kubeconfig", false, "use kubeconfig on local system")
 	flag.Parse()
@@ -44,15 +52,7 @@ func main() {
 		log.Fatalln("failed to get deployments:", err)
 	}
 
-	type Container struct {
-		Name           string
-		ResourceCPU    bool
-		ResourceMemory bool
-		RequestCPU     bool
-		RequestMemory  bool
-	}
-
-	offenders := make(map[string][]*Container)
+	offenders := make(map[string][]*ContainerStatus)
 
 	for _, d := range deployments.Items {
 		containers := d.Spec.Template.Spec.Containers
@@ -72,7 +72,7 @@ func main() {
 				memoryRequestMissing = true
 			}
 			if cpuLimitMissing || memoryLimitMissing {
-				container := Container{c.Name, cpuLimitMissing, memoryLimitMissing, cpuRequestMissing, memoryRequestMissing}
+				container := ContainerStatus{c.Name, cpuLimitMissing, memoryLimitMissing, cpuRequestMissing, memoryRequestMissing}
 				offenders[d.GetName()] = append(offenders[d.GetName()], &container)
 			}
 		}
@@ -96,7 +96,7 @@ func main() {
 				memoryRequestMissing = true
 			}
 			if cpuLimitMissing || memoryLimitMissing {
-				container := Container{c.Name, cpuLimitMissing, memoryLimitMissing, cpuRequestMissing, memoryRequestMissing}
+				container := ContainerStatus{c.Name, cpuLimitMissing, memoryLimitMissing, cpuRequestMissing, memoryRequestMissing}
 				offenders[ds.GetName()] = append(offenders[ds.GetName()], &container)
 			}
 		}
