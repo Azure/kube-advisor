@@ -34,11 +34,11 @@ func checkContainer(c v1.Container) LimitCheckStatus {
 
 // LimitCheckStatus represents a container and its resource and request limit status
 type LimitCheckStatus struct {
-	ContainerName  string
-	ResourceCPU    bool
-	ResourceMemory bool
-	RequestCPU     bool
-	RequestMemory  bool
+	ContainerName         string
+	ResourceCPUMissing    bool
+	ResourceMemoryMissing bool
+	RequestCPUMissing     bool
+	RequestMemoryMissing  bool
 }
 
 func main() {
@@ -113,7 +113,7 @@ func main() {
 				key := v.Type().Field(i).Name
 				value := v.Field(i).Bool()
 				if value == true {
-					color.Red("- %+v has no limit set and may cause node resource starvation/scheduling problems", key)
+					color.Red("- %+v", key)
 				}
 			}
 		}
