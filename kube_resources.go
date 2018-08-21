@@ -113,9 +113,7 @@ func main() {
 				key := v.Type().Field(i).Name
 				value := v.Field(i).Bool()
 				if value == true {
-					color.Red("- %+v has no limit set and may cause node resource starvation", key)
-				} else {
-					color.Green("- %+v limit is set", key)
+					color.Red("- %+v has no limit set and may cause node resource starvation/scheduling problems", key)
 				}
 			}
 		}
