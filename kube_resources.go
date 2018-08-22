@@ -14,8 +14,7 @@ import (
 )
 
 func checkContainer(c v1.Container) (StatusCheck, bool) {
-	m := make(map[string]bool)
-	sc := StatusCheck{ContainerName: c.Name, Missing: m}
+	sc := StatusCheck{ContainerName: c.Name, Missing: make(map[string]bool)}
 
 	if c.Resources.Limits.Cpu().IsZero() {
 		sc.Missing["CPU Resource Limits Missing"] = true
@@ -65,17 +64,23 @@ func main() {
 		log.Fatal(err)
 	}
 
-	deployments, err := clientset.AppsV1().Deployments("").List(metav1.ListOptions{})
-	daemonsets, err := clientset.AppsV1().DaemonSets("").List(metav1.ListOptions{})
-	statefulsets, err := clientset.AppsV1().StatefulSets("").List(metav1.ListOptions{})
+	deploymentsAppsV1, err := clientset.AppsV1().Deployments("").List(metav1.ListOptions{})
 	if err != nil {
 		log.Fatalln("failed to get deployments:", err)
+	}
+	daemonsetsAppsV1, err := clientset.AppsV1().DaemonSets("").List(metav1.ListOptions{})
+	if err != nil {
+		log.Fatalln("failed to get daemon sets:", err)
+	}
+	statefulsetsAppsV1, err := clientset.AppsV1().StatefulSets("").List(metav1.ListOptions{})
+	if err != nil {
+		log.Fatalln("failed to get stateful sets:", err)
 	}
 
 	statusChecksWrapper := make(map[string][]*StatusCheck)
 
 	// Gather container statusChecksWrapper from Deployments
-	for _, d := range deployments.Items {
+	for _, d := range deploymentsAppsV1.Items {
 		containers := d.Spec.Template.Spec.Containers
 		for _, c := range containers {
 			status, ok := checkContainer(c)
@@ -86,7 +91,7 @@ func main() {
 	}
 
 	// Gather container statusChecksWrapper from StatefulSets
-	for _, ss := range statefulsets.Items {
+	for _, ss := range statefulsetsAppsV1.Items {
 		containers := ss.Spec.Template.Spec.Containers
 		for _, c := range containers {
 			status, ok := checkContainer(c)
@@ -97,7 +102,7 @@ func main() {
 	}
 
 	// Gather container statusChecksWrapper from DaemonSets
-	for _, ds := range daemonsets.Items {
+	for _, ds := range daemonsetsAppsV1.Items {
 		containers := ds.Spec.Template.Spec.Containers
 		for _, c := range containers {
 			status, ok := checkContainer(c)
