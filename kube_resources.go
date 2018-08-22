@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/fatih/color"
+	"github.com/olekukonko/tablewriter"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -112,15 +112,19 @@ func main() {
 		}
 	}
 
+	table := tablewriter.NewWriter(os.Stdout)
 	for k, statusChecks := range statusChecksWrapper {
-		c := color.New(color.FgBlue, color.Underline, color.Bold)
-		c.Printf("Deployment/DaemonSet/StatefulSet name: %s\n", k)
+		table.SetHeader([]string{"Deployment/StatefulSet/DaemonSet", "Container", "Issue"})
+		table.SetHeaderColor(tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor},
+			tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor},
+			tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor})
+		table.SetAutoMergeCells(true)
+		table.SetRowLine(true)
 		for _, s := range statusChecks {
-			cc := color.New(color.Bold)
-			cc.Printf("Container: %s\n", s.ContainerName)
 			for key := range s.Missing {
-				color.Red("- %+v", key)
+				table.Append([]string{k, s.ContainerName, key})
 			}
 		}
 	}
+	table.Render()
 }
