@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"reflect"
 
 	"github.com/fatih/color"
 	"k8s.io/api/core/v1"
@@ -14,31 +13,32 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func checkContainer(c v1.Container) LimitCheckStatus {
-	var cpuLimitMissing, memoryLimitMissing, cpuRequestMissing, memoryRequestMissing bool
+func checkContainer(c v1.Container) (StatusCheck, bool) {
+	m := make(map[string]bool)
+	sc := StatusCheck{ContainerName: c.Name, Missing: m}
 
 	if c.Resources.Limits.Cpu().IsZero() {
-		cpuLimitMissing = true
+		sc.Missing["CPU Resource Limits Missing"] = true
 	}
 	if c.Resources.Limits.Memory().IsZero() {
-		memoryLimitMissing = true
+		sc.Missing["Memory Resource Limits Missing"] = true
 	}
 	if c.Resources.Requests.Cpu().IsZero() {
-		cpuRequestMissing = true
+		sc.Missing["CPU Request Limits Missing"] = true
 	}
 	if c.Resources.Requests.Memory().IsZero() {
-		memoryRequestMissing = true
+		sc.Missing["Memory Request Limits Missing"] = true
 	}
-	return LimitCheckStatus{c.Name, cpuLimitMissing, memoryLimitMissing, cpuRequestMissing, memoryRequestMissing}
+	if len(sc.Missing) == 0 {
+		return StatusCheck{}, false
+	}
+	return sc, true
 }
 
-// LimitCheckStatus represents a container and its resource and request limit status
-type LimitCheckStatus struct {
-	ContainerName         string
-	ResourceCPUMissing    bool
-	ResourceMemoryMissing bool
-	RequestCPUMissing     bool
-	RequestMemoryMissing  bool
+// StatusCheck represents a container and its resource and request limit status
+type StatusCheck struct {
+	ContainerName string
+	Missing       map[string]bool
 }
 
 func main() {
@@ -72,49 +72,49 @@ func main() {
 		log.Fatalln("failed to get deployments:", err)
 	}
 
-	statuses := make(map[string][]*LimitCheckStatus)
+	statusChecksWrapper := make(map[string][]*StatusCheck)
 
-	// Gather container statuses from Deployments
+	// Gather container statusChecksWrapper from Deployments
 	for _, d := range deployments.Items {
 		containers := d.Spec.Template.Spec.Containers
 		for _, c := range containers {
-			status := checkContainer(c)
-			statuses[d.GetName()] = append(statuses[d.GetName()], &status)
+			status, ok := checkContainer(c)
+			if ok {
+				statusChecksWrapper[d.GetName()] = append(statusChecksWrapper[d.GetName()], &status)
+			}
 		}
 	}
 
-	// Gather container statuses from StatefulSets
+	// Gather container statusChecksWrapper from StatefulSets
 	for _, ss := range statefulsets.Items {
 		containers := ss.Spec.Template.Spec.Containers
 		for _, c := range containers {
-			status := checkContainer(c)
-			statuses[ss.GetName()] = append(statuses[ss.GetName()], &status)
+			status, ok := checkContainer(c)
+			if ok {
+				statusChecksWrapper[ss.GetName()] = append(statusChecksWrapper[ss.GetName()], &status)
+			}
 		}
 	}
 
-	// Gather container statuses from DaemonSets
+	// Gather container statusChecksWrapper from DaemonSets
 	for _, ds := range daemonsets.Items {
 		containers := ds.Spec.Template.Spec.Containers
 		for _, c := range containers {
-			status := checkContainer(c)
-			statuses[ds.GetName()] = append(statuses[ds.GetName()], &status)
+			status, ok := checkContainer(c)
+			if ok {
+				statusChecksWrapper[ds.GetName()] = append(statusChecksWrapper[ds.GetName()], &status)
+			}
 		}
 	}
 
-	for k, limitStatuses := range statuses {
+	for k, statusChecks := range statusChecksWrapper {
 		c := color.New(color.FgBlue, color.Underline, color.Bold)
 		c.Printf("Deployment/DaemonSet/StatefulSet name: %s\n", k)
-		for _, s := range limitStatuses {
+		for _, s := range statusChecks {
 			cc := color.New(color.Bold)
 			cc.Printf("Container: %s\n", s.ContainerName)
-			v := reflect.Indirect(reflect.ValueOf(s))
-			// Purposely skip the first struct field, Name, which is a string
-			for i := 1; i < 5; i++ {
-				key := v.Type().Field(i).Name
-				value := v.Field(i).Bool()
-				if value == true {
-					color.Red("- %+v", key)
-				}
+			for key := range s.Missing {
+				color.Red("- %+v", key)
 			}
 		}
 	}
