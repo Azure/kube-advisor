@@ -1,4 +1,32 @@
 
+# Running in a Kubernetes cluster without RBAC enabled
+
+Just run the pod by itself:
+
+```
+$ kubectl run --rm -i -t kube-resource-checker --image=seanknox/kube-resources-checker:latest --restart=Never
+```
+
+# Running in a Kubernetes cluster with RBAC enabled
+1. Create the service account and cluster role binding:
+
+```
+$ kubectl apply -f https://raw.githubusercontent.com/Azure/kube-resources-checker/master/sa.yaml?token=ABLLDrNcuHMro9jQ0xduCaEbpzLupzQUks5bh3RhwA%3D%3D
+```
+
+2. Run the pod:
+
+```
+$ kubectl run --rm -i -t kube-resource-checker --image=seanknox/kube-resources-checker:latest --restart=Never --overrides="{ \"apiVersion\": \"v1\", \"spec\": { \"serviceAccountName\": \"kube-resource-checker\" } }"
+```
+
+3. If desired, delete the service account and cluster role binding:
+
+```
+$ kubectl delete -f https://raw.githubusercontent.com/Azure/kube-resources-checker/master/sa.yaml?token=ABLLDrNcuHMro9jQ0xduCaEbpzLupzQUks5bh3RhwA%3D%3D
+```
+
+
 # Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
