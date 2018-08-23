@@ -9,7 +9,7 @@ kube-advisor is a Go application that searches your cluster for Deployments, Sta
 Just run the pod by itself:
 
 ```
-$ kubectl run --rm -i -t kube-resource-checker --image=seanknox/kube-advisor:latest --restart=Never
+$ kubectl run --rm -i -t kube-advisor --image=seanknox/kube-advisor:latest --restart=Never
 ```
 
 ## Running in a Kubernetes cluster with RBAC enabled
@@ -22,7 +22,7 @@ $ kubectl apply -f https://raw.githubusercontent.com/Azure/kube-advisor/master/s
 2. Run the pod:
 
 ```
-$ kubectl run --rm -i -t kube-resource-checker --image=seanknox/kube-advisor:latest --restart=Never --overrides="{ \"apiVersion\": \"v1\", \"spec\": { \"serviceAccountName\": \"kube-resource-checker\" } }"
+$ kubectl run --rm -i -t kube-advisor --image=seanknox/kube-advisor:latest --restart=Never --overrides="{ \"apiVersion\": \"v1\", \"spec\": { \"serviceAccountName\": \"kube-advisor\" } }"
 ```
 
 3. If desired, delete the service account and cluster role binding:
