@@ -1,5 +1,10 @@
+# kube-resources-checker
 
-# Running in a Kubernetes cluster without RBAC enabled
+kube-resources-checker is a Go application that searches your cluster for Deployments, Stateful Sets, and Daemon Sets that are missing resource and request limits.
+
+![](https://user-images.githubusercontent.com/1231630/44505638-5a2c0500-a657-11e8-8bf1-1766d69fa2ff.png)
+
+## Running in a Kubernetes cluster without RBAC enabled
 
 Just run the pod by itself:
 
@@ -7,7 +12,7 @@ Just run the pod by itself:
 $ kubectl run --rm -i -t kube-resource-checker --image=seanknox/kube-resources-checker:latest --restart=Never
 ```
 
-# Running in a Kubernetes cluster with RBAC enabled
+## Running in a Kubernetes cluster with RBAC enabled
 1. Create the service account and cluster role binding:
 
 ```
