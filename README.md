@@ -1,6 +1,6 @@
-# kube-resources-checker
+# kube-advisor
 
-kube-resources-checker is a Go application that searches your cluster for Deployments, Stateful Sets, and Daemon Sets that are missing resource and request limits.
+kube-advisor is a Go application that searches your cluster for Deployments, Stateful Sets, and Daemon Sets that are missing resource and request limits.
 
 ![](https://user-images.githubusercontent.com/1231630/44505638-5a2c0500-a657-11e8-8bf1-1766d69fa2ff.png)
 
@@ -9,26 +9,26 @@ kube-resources-checker is a Go application that searches your cluster for Deploy
 Just run the pod by itself:
 
 ```
-$ kubectl run --rm -i -t kube-resource-checker --image=seanknox/kube-resources-checker:latest --restart=Never
+$ kubectl run --rm -i -t kube-resource-checker --image=seanknox/kube-advisor:latest --restart=Never
 ```
 
 ## Running in a Kubernetes cluster with RBAC enabled
 1. Create the service account and cluster role binding:
 
 ```
-$ kubectl apply -f https://raw.githubusercontent.com/Azure/kube-resources-checker/master/sa.yaml?token=ABLLDrNcuHMro9jQ0xduCaEbpzLupzQUks5bh3RhwA%3D%3D
+$ kubectl apply -f https://raw.githubusercontent.com/Azure/kube-advisor/master/sa.yaml?token=ABLLDrNcuHMro9jQ0xduCaEbpzLupzQUks5bh3RhwA%3D%3D
 ```
 
 2. Run the pod:
 
 ```
-$ kubectl run --rm -i -t kube-resource-checker --image=seanknox/kube-resources-checker:latest --restart=Never --overrides="{ \"apiVersion\": \"v1\", \"spec\": { \"serviceAccountName\": \"kube-resource-checker\" } }"
+$ kubectl run --rm -i -t kube-resource-checker --image=seanknox/kube-advisor:latest --restart=Never --overrides="{ \"apiVersion\": \"v1\", \"spec\": { \"serviceAccountName\": \"kube-resource-checker\" } }"
 ```
 
 3. If desired, delete the service account and cluster role binding:
 
 ```
-$ kubectl delete -f https://raw.githubusercontent.com/Azure/kube-resources-checker/master/sa.yaml?token=ABLLDrNcuHMro9jQ0xduCaEbpzLupzQUks5bh3RhwA%3D%3D
+$ kubectl delete -f https://raw.githubusercontent.com/Azure/kube-advisor/master/sa.yaml?token=ABLLDrNcuHMro9jQ0xduCaEbpzLupzQUks5bh3RhwA%3D%3D
 ```
 
 
