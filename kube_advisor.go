@@ -13,8 +13,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func checkContainer(c v1.Container) (StatusCheck, bool) {
-	sc := StatusCheck{ContainerName: c.Name, Missing: make(map[string]bool)}
+func checkContainer(c v1.Container, ns string) (StatusCheck, bool) {
+	sc := StatusCheck{ContainerName: c.Name, Namespace: ns, Missing: make(map[string]bool)}
 
 	if c.Resources.Limits.Cpu().IsZero() {
 		sc.Missing["CPU Resource Limits Missing"] = true
@@ -37,6 +37,7 @@ func checkContainer(c v1.Container) (StatusCheck, bool) {
 // StatusCheck represents a container and its resource and request limit status
 type StatusCheck struct {
 	ContainerName string
+	Namespace     string
 	Missing       map[string]bool
 }
 
@@ -83,7 +84,7 @@ func main() {
 	for _, d := range deploymentsAppsV1.Items {
 		containers := d.Spec.Template.Spec.Containers
 		for _, c := range containers {
-			status, ok := checkContainer(c)
+			status, ok := checkContainer(c, d.Namespace)
 			if ok {
 				statusChecksWrapper[d.GetName()] = append(statusChecksWrapper[d.GetName()], &status)
 			}
@@ -94,7 +95,7 @@ func main() {
 	for _, ss := range statefulsetsAppsV1.Items {
 		containers := ss.Spec.Template.Spec.Containers
 		for _, c := range containers {
-			status, ok := checkContainer(c)
+			status, ok := checkContainer(c, ss.Namespace)
 			if ok {
 				statusChecksWrapper[ss.GetName()] = append(statusChecksWrapper[ss.GetName()], &status)
 			}
@@ -105,7 +106,7 @@ func main() {
 	for _, ds := range daemonsetsAppsV1.Items {
 		containers := ds.Spec.Template.Spec.Containers
 		for _, c := range containers {
-			status, ok := checkContainer(c)
+			status, ok := checkContainer(c, ds.Namespace)
 			if ok {
 				statusChecksWrapper[ds.GetName()] = append(statusChecksWrapper[ds.GetName()], &status)
 			}
@@ -114,15 +115,16 @@ func main() {
 
 	issuesTable := tablewriter.NewWriter(os.Stdout)
 	for k, statusChecks := range statusChecksWrapper {
-		issuesTable.SetHeader([]string{"Deployment/StatefulSet/DaemonSet", "Container", "Issue"})
+		issuesTable.SetHeader([]string{"Deployment/StatefulSet/DaemonSet", "Namespace", "Container", "Issue"})
 		issuesTable.SetHeaderColor(tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor},
+			tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor},
 			tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor},
 			tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor})
 		issuesTable.SetAutoMergeCells(true)
 		issuesTable.SetRowLine(true)
 		for _, s := range statusChecks {
 			for key := range s.Missing {
-				issuesTable.Append([]string{k, s.ContainerName, key})
+				issuesTable.Append([]string{k, s.Namespace, s.ContainerName, key})
 			}
 		}
 	}
