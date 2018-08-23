@@ -112,19 +112,30 @@ func main() {
 		}
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
+	issuesTable := tablewriter.NewWriter(os.Stdout)
 	for k, statusChecks := range statusChecksWrapper {
-		table.SetHeader([]string{"Deployment/StatefulSet/DaemonSet", "Container", "Issue"})
-		table.SetHeaderColor(tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor},
+		issuesTable.SetHeader([]string{"Deployment/StatefulSet/DaemonSet", "Container", "Issue"})
+		issuesTable.SetHeaderColor(tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor},
 			tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor},
 			tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor})
-		table.SetAutoMergeCells(true)
-		table.SetRowLine(true)
+		issuesTable.SetAutoMergeCells(true)
+		issuesTable.SetRowLine(true)
 		for _, s := range statusChecks {
 			for key := range s.Missing {
-				table.Append([]string{k, s.ContainerName, key})
+				issuesTable.Append([]string{k, s.ContainerName, key})
 			}
 		}
 	}
-	table.Render()
+	issuesTable.Render()
+
+	remediationTable := tablewriter.NewWriter(os.Stdout)
+	remediationTable.SetHeader([]string{"Issue", "Remediation"})
+	remediationTable.SetHeaderColor(tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor})
+	remediationTable.SetAutoMergeCells(true)
+	remediationTable.Append([]string{"CPU Request Limits Missing", "https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
+	remediationTable.Append([]string{"Memory Request Limits Missing", "https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
+	remediationTable.Append([]string{"CPU Resource Limits Missing", "https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
+	remediationTable.Append([]string{"Memory Resource Limits Missing", "https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
+	remediationTable.Render()
 }
