@@ -1,34 +1,35 @@
 # kube-advisor
 
-kube-advisor is a Go application that searches your cluster for Deployments, Stateful Sets, and Daemon Sets that are missing resource and request limits.
+kube-advisor is a diagnostic tool for Kubernetes clusters. At the moment, it returns pods that are missing resource and request limits.
 
-![](https://user-images.githubusercontent.com/1231630/44505638-5a2c0500-a657-11e8-8bf1-1766d69fa2ff.png)
+![screenshot](https://user-images.githubusercontent.com/1231630/44505638-5a2c0500-a657-11e8-8bf1-1766d69fa2ff.png)
 
 ## Running in a Kubernetes cluster without RBAC enabled
 
 Just run the pod by itself:
 
-```
-$ kubectl run --rm -i -t kube-advisor --image=seanknox/kube-advisor:latest --restart=Never
+```bash
+# kubectl run --rm -i -t kube-advisor --image=mcr.microsoft.com/kube-advisor --restart=Never
 ```
 
 ## Running in a Kubernetes cluster with RBAC enabled
-1. Create the service account and cluster role binding:
 
-```
-$ kubectl apply -f https://raw.githubusercontent.com/Azure/kube-advisor/master/sa.yaml?token=ABLLDrNcuHMro9jQ0xduCaEbpzLupzQUks5bh3RhwA%3D%3D
-```
+### Create the service account and cluster role binding
 
-2. Run the pod:
-
-```
-$ kubectl run --rm -i -t kube-advisor --image=seanknox/kube-advisor:latest --restart=Never --overrides="{ \"apiVersion\": \"v1\", \"spec\": { \"serviceAccountName\": \"kube-advisor\" } }"
+```bash
+# kubectl apply -f https://raw.githubusercontent.com/Azure/kube-advisor/master/sa.yaml?token=ABLLDrNcuHMro9jQ0xduCaEbpzLupzQUks5bh3RhwA%3D%3D
 ```
 
-3. If desired, delete the service account and cluster role binding:
+### Run the pod
 
+```bash
+# kubectl run --rm -i -t kube-advisor --image=mcr.microsoft.com/kube-advisor --restart=Never --overrides="{ \"apiVersion\": \"v1\", \"spec\": { \"serviceAccountName\": \"kube-advisor\" } }"
 ```
-$ kubectl delete -f https://raw.githubusercontent.com/Azure/kube-advisor/master/sa.yaml?token=ABLLDrNcuHMro9jQ0xduCaEbpzLupzQUks5bh3RhwA%3D%3D
+
+### If desired, delete the service account and cluster role binding
+
+```bash
+# kubectl delete -f https://raw.githubusercontent.com/Azure/kube-advisor/master/sa.yaml?token=ABLLDrNcuHMro9jQ0xduCaEbpzLupzQUks5bh3RhwA%3D%3D
 ```
 
 
