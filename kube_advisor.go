@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,10 +12,22 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
+	metrics "k8s.io/metrics/pkg/client/clientset_generated/clientset"
 )
 
-func checkContainer(c v1.Container, ns string) (StatusCheck, bool) {
-	sc := StatusCheck{ContainerName: c.Name, Namespace: ns, Missing: make(map[string]bool)}
+func checkContainer(c v1.Container, p v1.Pod, pm v1beta1.PodMetrics) (PodStatusCheck, bool) {
+	sc := PodStatusCheck{
+		ContainerName: c.Name,
+		PodName:       p.Name,
+		Missing:       make(map[string]bool),
+	}
+
+	for _, c := range pm.Containers {
+		sc.PodCPU = c.Usage.Cpu().String()
+		sc.PodMemory = c.Usage.Memory().String()
+	}
 
 	if c.Resources.Limits.Cpu().IsZero() {
 		sc.Missing["CPU Resource Limits Missing"] = true
@@ -29,16 +42,24 @@ func checkContainer(c v1.Container, ns string) (StatusCheck, bool) {
 		sc.Missing["Memory Request Limits Missing"] = true
 	}
 	if len(sc.Missing) == 0 {
-		return StatusCheck{}, false
+		return PodStatusCheck{}, false
 	}
 	return sc, true
 }
 
-// StatusCheck represents a container and its resource and request limit status
-type StatusCheck struct {
+// PodStatusCheck represents a container and its resource and request limit status
+type PodStatusCheck struct {
+	PodName       string
 	ContainerName string
-	Namespace     string
+	PodCPU        string
+	PodMemory     string
 	Missing       map[string]bool
+}
+
+type NodeStatusCheck struct {
+	NodeName   string
+	NodeCPU    string
+	NodeMemory string
 }
 
 func main() {
@@ -64,59 +85,55 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	deploymentsAppsV1, err := clientset.AppsV1().Deployments("").List(metav1.ListOptions{})
+	metricClient, err := metrics.NewForConfig(config)
 	if err != nil {
-		log.Fatalln("failed to get deployments:", err)
-	}
-	daemonsetsAppsV1, err := clientset.AppsV1().DaemonSets("").List(metav1.ListOptions{})
-	if err != nil {
-		log.Fatalln("failed to get daemon sets:", err)
-	}
-	statefulsetsAppsV1, err := clientset.AppsV1().StatefulSets("").List(metav1.ListOptions{})
-	if err != nil {
-		log.Fatalln("failed to get stateful sets:", err)
+		log.Fatal(err)
 	}
 
-	statusChecksWrapper := make(map[string][]*StatusCheck)
+	statusChecksWrapper := make(map[string][]*PodStatusCheck)
 
-	// Gather container statusChecksWrapper from Deployments
-	for _, d := range deploymentsAppsV1.Items {
-		containers := d.Spec.Template.Spec.Containers
+	pods, _ := clientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	if err != nil {
+		log.Fatalln("failed to get pods:", err)
+	}
+	for _, p := range pods.Items {
+		containers := p.Spec.Containers
 		for _, c := range containers {
-			status, ok := checkContainer(c, d.Namespace)
-			if ok {
-				statusChecksWrapper[d.GetName()] = append(statusChecksWrapper[d.GetName()], &status)
+			podMetricsList, _ := metricClient.MetricsV1beta1().PodMetricses("").List(metav1.ListOptions{})
+			for _, pm := range podMetricsList.Items {
+				if p.Name == pm.Name {
+					status, ok := checkContainer(c, p, pm)
+					if ok {
+						statusChecksWrapper[p.Namespace] = append(statusChecksWrapper[p.Namespace], &status)
+					}
+				}
 			}
 		}
 	}
 
-	// Gather container statusChecksWrapper from StatefulSets
-	for _, ss := range statefulsetsAppsV1.Items {
-		containers := ss.Spec.Template.Spec.Containers
-		for _, c := range containers {
-			status, ok := checkContainer(c, ss.Namespace)
-			if ok {
-				statusChecksWrapper[ss.GetName()] = append(statusChecksWrapper[ss.GetName()], &status)
-			}
-		}
+	var nodeStatuses []*NodeStatusCheck
+	nodeMetricsList, _ := metricClient.MetricsV1beta1().NodeMetricses().List(metav1.ListOptions{})
+	for _, nm := range nodeMetricsList.Items {
+		ns := NodeStatusCheck{NodeName: nm.Name, NodeCPU: nm.Usage.Cpu().String(), NodeMemory: nm.Usage.Memory().String()}
+		nodeStatuses = append(nodeStatuses, &ns)
 	}
 
-	// Gather container statusChecksWrapper from DaemonSets
-	for _, ds := range daemonsetsAppsV1.Items {
-		containers := ds.Spec.Template.Spec.Containers
-		for _, c := range containers {
-			status, ok := checkContainer(c, ds.Namespace)
-			if ok {
-				statusChecksWrapper[ds.GetName()] = append(statusChecksWrapper[ds.GetName()], &status)
-			}
-		}
+	nodeTable := tablewriter.NewWriter(os.Stdout)
+	nodeTable.SetHeader([]string{"Node", "Node CPU Usage", "Node Memory Usage"})
+	nodeTable.SetHeaderColor(tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor},
+		tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor})
+	nodeTable.SetAutoMergeCells(true)
+	nodeTable.SetRowLine(true)
+	for _, ns := range nodeStatuses {
+		nodeTable.Append([]string{ns.NodeName, ns.NodeCPU, ns.NodeMemory})
 	}
 
 	issuesTable := tablewriter.NewWriter(os.Stdout)
 	for k, statusChecks := range statusChecksWrapper {
-		issuesTable.SetHeader([]string{"Deployment/StatefulSet/DaemonSet", "Namespace", "Container", "Issue"})
+		issuesTable.SetHeader([]string{"Namespace", "Pod Name", "Pod CPU/Memory", "Container", "Issue"})
 		issuesTable.SetHeaderColor(tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor},
+			tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor},
 			tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor},
 			tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor},
 			tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor})
@@ -124,11 +141,11 @@ func main() {
 		issuesTable.SetRowLine(true)
 		for _, s := range statusChecks {
 			for key := range s.Missing {
-				issuesTable.Append([]string{k, s.Namespace, s.ContainerName, key})
+				resourceString := fmt.Sprintf("%v / %v", s.PodCPU, s.PodMemory)
+				issuesTable.Append([]string{k, s.PodName, resourceString, s.ContainerName, key})
 			}
 		}
 	}
-	issuesTable.Render()
 
 	remediationTable := tablewriter.NewWriter(os.Stdout)
 	remediationTable.SetHeader([]string{"Issue", "Remediation"})
@@ -139,5 +156,8 @@ func main() {
 	remediationTable.Append([]string{"Memory Request Limits Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
 	remediationTable.Append([]string{"CPU Resource Limits Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
 	remediationTable.Append([]string{"Memory Resource Limits Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
+
+	issuesTable.Render()
+	nodeTable.Render()
 	remediationTable.Render()
 }
