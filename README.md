@@ -17,7 +17,7 @@ Just run the pod by itself:
 ### Create the service account and cluster role binding
 
 ```bash
-# kubectl apply -f https://raw.githubusercontent.com/Azure/kube-advisor/master/sa.yaml?token=ABLLDrNcuHMro9jQ0xduCaEbpzLupzQUks5bh3RhwA%3D%3D
+# kubectl apply -f https://raw.githubusercontent.com/Azure/kube-advisor/master/sa.yaml?token=ABLLDqUpCcBLHrAoMNOCwSahn4b-hwKKks5bl-0QwA%3D%3D
 ```
 
 ### Run the pod
@@ -29,5 +29,5 @@ Just run the pod by itself:
 ### If desired, delete the service account and cluster role binding
 
 ```bash
-# kubectl delete -f https://raw.githubusercontent.com/Azure/kube-advisor/master/sa.yaml?token=ABLLDrNcuHMro9jQ0xduCaEbpzLupzQUks5bh3RhwA%3D%3D
+# kubectl delete -f https://raw.githubusercontent.com/Azure/kube-advisor/master/sa.yaml?token=ABLLDqUpCcBLHrAoMNOCwSahn4b-hwKKks5bl-0QwA%3D%3D
 ```
