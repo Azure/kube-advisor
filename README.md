@@ -9,7 +9,7 @@ kube-advisor is a diagnostic tool for Kubernetes clusters. At the moment, it ret
 Just run the pod by itself:
 
 ```bash
-# kubectl run --rm -i -t kube-advisor --image=mcr.microsoft.com/aks/kube-advisor --restart=Never
+# kubectl run --rm -i -t kube-advisor --image=mcr.microsoft.com/aks/kubeadvisor --restart=Never
 ```
 
 ## Running in a Kubernetes cluster with RBAC enabled
@@ -23,7 +23,7 @@ Just run the pod by itself:
 ### Run the pod
 
 ```bash
-# kubectl run --rm -i -t kube-advisor --image=mcr.microsoft.com/aks/kube-advisor --restart=Never --overrides="{ \"apiVersion\": \"v1\", \"spec\": { \"serviceAccountName\": \"kube-advisor\" } }"
+# kubectl run --rm -i -t kube-advisor --image=mcr.microsoft.com/aks/kubeadvisor --restart=Never --overrides="{ \"apiVersion\": \"v1\", \"spec\": { \"serviceAccountName\": \"kube-advisor\" } }"
 ```
 
 ### If desired, delete the service account and cluster role binding
