@@ -14,7 +14,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
-	metrics "k8s.io/metrics/pkg/client/clientset_generated/clientset"
+	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
 func checkContainer(c v1.Container, p v1.Pod, pm v1beta1.PodMetrics) (PodStatusCheck, bool) {
