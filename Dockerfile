@@ -1,11 +1,12 @@
-FROM golang:1.9 AS build
+FROM golang:1.11.0-alpine3.8 AS build
+RUN apk add -U git
 WORKDIR /go/src/github.com/Azure/kube-advisor
 ADD Gopkg.toml Gopkg.lock ./
 RUN go get -v github.com/golang/dep/cmd/dep && dep ensure -v -vendor-only
 ADD kube_advisor.go .
 RUN CGO_ENABLED=0 go install -a -ldflags '-w'
 
-FROM alpine:3.7 AS run
+FROM alpine:3.8 AS run
 # add GNU ps for -C, -o cmd, and --no-headers support
 RUN apk --no-cache add procps
 COPY --from=build /go/bin/kube-advisor /usr/local/bin/kube-advisor

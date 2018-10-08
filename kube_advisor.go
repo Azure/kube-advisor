@@ -14,14 +14,14 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
-	metrics "k8s.io/metrics/pkg/client/clientset_generated/clientset"
+	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
 )
 
 func checkContainer(c v1.Container, p v1.Pod, pm v1beta1.PodMetrics) (PodStatusCheck, bool) {
 	sc := PodStatusCheck{
 		ContainerName: c.Name,
 		PodName:       p.Name,
-		Missing:       make(map[string]bool),
+		Issues:       make(map[string]bool),
 	}
 
 	for _, c := range pm.Containers {
@@ -30,18 +30,24 @@ func checkContainer(c v1.Container, p v1.Pod, pm v1beta1.PodMetrics) (PodStatusC
 	}
 
 	if c.Resources.Limits.Cpu().IsZero() {
-		sc.Missing["CPU Resource Limits Missing"] = true
+		sc.Issues["CPU Resource Limits Missing"] = true
 	}
 	if c.Resources.Limits.Memory().IsZero() {
-		sc.Missing["Memory Resource Limits Missing"] = true
+		sc.Issues["Memory Resource Limits Missing"] = true
 	}
 	if c.Resources.Requests.Cpu().IsZero() {
-		sc.Missing["CPU Request Limits Missing"] = true
+		sc.Issues["CPU Request Limits Missing"] = true
 	}
 	if c.Resources.Requests.Memory().IsZero() {
-		sc.Missing["Memory Request Limits Missing"] = true
+		sc.Issues["Memory Request Limits Missing"] = true
 	}
-	if len(sc.Missing) == 0 {
+	if c.LivenessProbe == nil {
+		sc.Issues["Liveness Probe Missing"] = true
+	}
+	if c.ReadinessProbe == nil {
+		sc.Issues["Readiness Probe Missing"] = true
+	}
+	if len(sc.Issues) == 0 {
 		return PodStatusCheck{}, false
 	}
 	return sc, true
@@ -53,7 +59,7 @@ type PodStatusCheck struct {
 	ContainerName string
 	PodCPU        string
 	PodMemory     string
-	Missing       map[string]bool
+	Issues       map[string]bool
 }
 
 type NodeStatusCheck struct {
@@ -140,7 +146,7 @@ func main() {
 		issuesTable.SetAutoMergeCells(true)
 		issuesTable.SetRowLine(true)
 		for _, s := range statusChecks {
-			for key := range s.Missing {
+			for key := range s.Issues {
 				resourceString := fmt.Sprintf("%v / %v", s.PodCPU, s.PodMemory)
 				issuesTable.Append([]string{k, s.PodName, resourceString, s.ContainerName, key})
 			}
@@ -156,6 +162,9 @@ func main() {
 	remediationTable.Append([]string{"Memory Request Limits Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
 	remediationTable.Append([]string{"CPU Resource Limits Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
 	remediationTable.Append([]string{"Memory Resource Limits Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
+	remediationTable.Append([]string{"--------------------------------","---------------------------------------------------------------------------------------"})
+	remediationTable.Append([]string{"Liveness Probe Missing", "Consider setting readiness and liveness probes to improve reliability: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/"})
+	remediationTable.Append([]string{"Readiness Probe Missing", "Consider setting readiness and liveness probes to improve reliability: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/"})
 
 	issuesTable.Render()
 	nodeTable.Render()
