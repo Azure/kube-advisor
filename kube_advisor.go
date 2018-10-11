@@ -41,6 +41,15 @@ func checkContainer(c v1.Container, p v1.Pod, pm v1beta1.PodMetrics) (PodStatusC
 	if c.Resources.Requests.Memory().IsZero() {
 		sc.Missing["Memory Request Limits Missing"] = true
 	}
+
+	if c.ReadinessProbe == nil {
+		sc.Missing["Missing Readiness Probe"] = true
+	}
+
+	if c.LivenessProbe == nil {
+		sc.Missing["Missing Liveness Probe"] = true
+	}
+
 	if len(sc.Missing) == 0 {
 		return PodStatusCheck{}, false
 	}
@@ -156,6 +165,8 @@ func main() {
 	remediationTable.Append([]string{"Memory Request Limits Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
 	remediationTable.Append([]string{"CPU Resource Limits Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
 	remediationTable.Append([]string{"Memory Resource Limits Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
+	remediationTable.Append([]string{"Readiness Probe Missing", "Consider configuring a Readiness probe to check the health of your Containers: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes"})
+	remediationTable.Append([]string{"Liveness Probe Missing", "Consider configuring a Liveness probe to check the running health of your Containers: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes"})
 
 	issuesTable.Render()
 	nodeTable.Render()
