@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/olekukonko/tablewriter"
 	"k8s.io/api/core/v1"
@@ -40,6 +41,15 @@ func checkContainer(c v1.Container, p v1.Pod, pm v1beta1.PodMetrics) (PodStatusC
 	}
 	if c.Resources.Requests.Memory().IsZero() {
 		sc.Missing["Memory Request Limits Missing"] = true
+	}
+	tagDelimIndex := strings.IndexRune(c.Image, ':')
+	if tagDelimIndex == -1 {
+		sc.Missing["Image Tag Missing"] = true
+	} else {
+		imageTag := c.Image[tagDelimIndex+1:]
+		if imageTag == "latest" {
+			sc.Missing["Tag 'latest' Used"] = true
+		}
 	}
 	if len(sc.Missing) == 0 {
 		return PodStatusCheck{}, false
@@ -156,6 +166,7 @@ func main() {
 	remediationTable.Append([]string{"Memory Request Limits Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
 	remediationTable.Append([]string{"CPU Resource Limits Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
 	remediationTable.Append([]string{"Memory Resource Limits Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
+	remediationTable.Append([]string{"Image Tag Missing / Tag 'latest' Used", "Consider adding tag for the image other than 'latest': https://kubernetes.io/docs/concepts/configuration/overview/#container-images"})
 
 	issuesTable.Render()
 	nodeTable.Render()
