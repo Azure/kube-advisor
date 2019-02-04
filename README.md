@@ -23,7 +23,7 @@ Just run the pod by itself:
 ### Run the pod
 
 ```bash
-# kubectl run --rm -i -t kube-advisor --image=mcr.microsoft.com/aks/kubeadvisor --restart=Never --overrides="{ \"apiVersion\": \"v1\", \"spec\": { \"serviceAccountName\": \"kube-advisor\" } }"
+# kubectl run --rm -i -t kube-advisor --image=mcr.microsoft.com/aks/kubeadvisor --restart=Never --serviceaccount=kube-advisor
 ```
 
 ### If desired, delete the service account and cluster role binding
