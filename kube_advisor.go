@@ -152,8 +152,8 @@ func main() {
 	remediationTable.SetHeaderColor(tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor},
 		tablewriter.Colors{tablewriter.Bold, tablewriter.BgBlackColor})
 	remediationTable.SetAutoMergeCells(true)
-	remediationTable.Append([]string{"CPU Request Limits Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
-	remediationTable.Append([]string{"Memory Request Limits Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
+	remediationTable.Append([]string{"CPU Resource Requests Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
+	remediationTable.Append([]string{"Memory Resource Requests Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
 	remediationTable.Append([]string{"CPU Resource Limits Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
 	remediationTable.Append([]string{"Memory Resource Limits Missing", "Consider setting resource and request limits to prevent resource starvation: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/"})
 
