@@ -1,6 +1,6 @@
 # kube-advisor
 
-kube-advisor is a diagnostic tool for Kubernetes clusters. At the moment, it returns pods that are missing resource and request limits.
+kube-advisor is a diagnostic tool for Kubernetes clusters. At the moment, it returns pods that are missing resource requests and limits. 
 
 ![screenshot](https://user-images.githubusercontent.com/1231630/44505638-5a2c0500-a657-11e8-8bf1-1766d69fa2ff.png)
 
